@@ -17,6 +17,11 @@ class MyClient(discord.Client):
         if message.author.id == self.user.id:
             return
 
+        if message.content == "!exit":
+            await message.reply("Terminating...", mention_author = True)
+            await self.close()
+            return
+        
         if message.content.startswith('!hello'):
             await message.reply('Hello!', mention_author = True)
 
