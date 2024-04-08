@@ -46,6 +46,15 @@ class MyClient(discord.Client):
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
 
+    async def on_guild_channel_delete(self, channel):
+        guild_config = self.registered_guild.get(channel.guild.id, {})
+        if channel.id in guild_config:
+            guild_config.pop(channel.id) # Delete channel from guild permissions.
+        c = [x.id for x in channel.guild.channels if x.type == discord.ChannelType.text]
+        l = list(filter(lambda x: x[0] in c and "configuration" in x[1], guild_config.items())) # Check that there still exists at least 1 'configuration' channel saved.
+        if not l:
+            self.registered_guild.pop(channel.guild.id)
+    
     async def on_message(self, message):
         # we do not want the bot to reply to itself
         if message.author.id == self.user.id:
@@ -55,14 +64,7 @@ class MyClient(discord.Client):
         
         channel_permission = set(("registration",))
         if guild_config:
-            # Check that there still exists at least 1 'configuration' channel saved.
-            c = [channel.id for channel in message.guild.channels if channel.type == discord.ChannelType.text]
-            for (i, x) in guild_config.items():
-                if i not in c: # Forget invalid channels.
-                    guild_config.pop(i)
-                elif "configuration" in x: # Check if registered 'configuration' channel is still valid.
-                    channel_permission = guild_config.get(message.channel.id, set(()))
-                    break
+            channel_permission = guild_config.get(message.channel.id, set(()))
         
         content = message.content.strip()
         
@@ -188,6 +190,7 @@ class MyClient(discord.Client):
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.guilds = True
 
 client = MyClient(credential.USER_ID, intents = intents)
 client.run(credential.TOKEN)
