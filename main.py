@@ -9,7 +9,7 @@ import credential
 
 def get_TextChannel_by_name(channels, name):
     l = list(filter(lambda x: x.name.startswith(name) and isinstance(x, discord.TextChannel) and x.type == discord.ChannelType.text, channels))
-    if len(l) == 0:
+    if not l:
         return None
     l.sort(key = lambda x: len(x))
     return l[0]
