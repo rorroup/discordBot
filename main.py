@@ -7,6 +7,13 @@
 import discord
 import credential
 
+def get_TextChannel_by_name(channels, name):
+    l = list(filter(lambda x: x.name.startswith(name) and isinstance(x, discord.TextChannel) and x.type == discord.ChannelType.text, channels))
+    if len(l) == 0:
+        return None
+    l.sort(key = lambda x: len(x))
+    return l[0]
+
 def parse_command_name(command):
     name = ""
     for c in command:
@@ -82,11 +89,7 @@ class MyClient(discord.Client):
                     type_ = parsed[1].lower()
                     if type_ == "configuration" or (type_ in ("system", "command", "listen") and "registration" not in channel_permission):
                         if len(parsed) == 3:
-                            channel = list(filter(lambda x: x.type == discord.ChannelType.text and x.name.startswith(parsed[2]), message.guild.channels))
-                            if len(channel) >= 1:
-                                channel = channel[0]
-                            else:
-                                channel = None
+                            channel = get_TextChannel_by_name(message.guild.channels, parsed[2])
                         else:
                             channel = message.channel
                         if channel:
@@ -104,11 +107,7 @@ class MyClient(discord.Client):
                     type_ = parsed[1].lower()
                     if type_ in ("system", "configuration", "command", "listen"):
                         if len(parsed) == 3:
-                            channel = list(filter(lambda x: x.type == discord.ChannelType.text and x.name.startswith(parsed[2]), message.guild.channels))
-                            if len(channel) >= 1:
-                                channel = channel[0]
-                            else:
-                                channel = None
+                            channel = get_TextChannel_by_name(message.guild.channels, parsed[2])
                         else:
                             channel = message.channel
                         if channel:
@@ -124,11 +123,7 @@ class MyClient(discord.Client):
                 parsed = parse_command(content, 2)
                 if len(parsed) >= 1:
                     if len(parsed) == 2:
-                        channel = list(filter(lambda x: x.type == discord.ChannelType.text and x.name.startswith(parsed[1]), message.guild.channels))
-                        if len(channel) >= 1:
-                            channel = channel[0]
-                        else:
-                            channel = None
+                        channel = get_TextChannel_by_name(message.guild.channels, parsed[1])
                     else:
                         channel = message.channel
                     if channel:
@@ -148,11 +143,7 @@ class MyClient(discord.Client):
                 parsed = parse_command(content, 2)
                 if len(parsed) >= 1:
                     if len(parsed) == 2:
-                        channel = list(filter(lambda x: x.type == discord.ChannelType.text and x.name.startswith(parsed[1]), message.guild.channels))
-                        if len(channel) >= 1:
-                            channel = channel[0]
-                        else:
-                            channel = None
+                        channel = get_TextChannel_by_name(message.guild.channels, parsed[1])
                     else:
                         channel = message.channel
                     if channel:
