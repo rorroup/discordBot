@@ -11,7 +11,7 @@ def get_TextChannel_by_name(channels, name):
     l = list(filter(lambda x: x.name.startswith(name) and isinstance(x, discord.TextChannel) and x.type == discord.ChannelType.text, channels))
     if not l:
         return None
-    l.sort(key = lambda x: len(x))
+    l.sort(key = lambda x: len(x.name))
     return l[0]
 
 def parse_command_name(command):
