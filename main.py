@@ -6,6 +6,7 @@
 
 import discord
 import credential
+from permission import Permission
 
 def get_TextChannel_by_name(channels, name):
     l = list(filter(lambda x: x.name.startswith(name) and isinstance(x, discord.TextChannel) and x.type == discord.ChannelType.text, channels))
@@ -54,13 +55,11 @@ class MyClient(discord.Client):
         print('------')
 
     async def on_guild_channel_delete(self, channel):
-        guild_config = self.registered_guild.get(channel.guild.id, {})
-        if channel.id in guild_config:
-            guild_config.pop(channel.id) # Delete channel from guild permissions.
-        c = [x.id for x in channel.guild.channels if x.type == discord.ChannelType.text]
-        l = list(filter(lambda x: x[0] in c and "configuration" in x[1], guild_config.items())) # Check that there still exists at least 1 'configuration' channel saved.
-        if not l:
-            self.registered_guild.pop(channel.guild.id)
+        guild_config = self.registered_guild.get(channel.guild.id)
+        if guild_config:
+            guild_config.clear(channel.id)
+            if not guild_config.channels:
+                self.registered_guild.pop(channel.guild.id)
     
     async def on_message(self, message):
         # we do not want the bot to reply to itself
@@ -68,54 +67,49 @@ class MyClient(discord.Client):
             return
         
         guild_config = self.registered_guild.get(message.guild.id, {})
-        
-        channel_permission = set(("registration",))
-        if guild_config:
-            channel_permission = guild_config.get(message.channel.id, set(()))
+        channel_permission = guild_config.get(message.channel.id, Permission.NONE)
         
         content = message.content.strip()
         
-        if "system" in channel_permission:
+        if (channel_permission & Permission.SYSTEM):
             if content.lower() == "!exit":
                 await self.exit(message)
                 return
         
-        if "registration" in channel_permission or "configuration" in channel_permission:
+        if (channel_permission & Permission.CONFIGURATION) or guild_config == {}:
             command = parse_command_name(content).lower()
             if command == "!set":
                 parsed = parse_command(content, 3)
                 if len(parsed) >= 2:
-                    type_ = parsed[1].lower()
-                    if type_ == "configuration" or (type_ in ("system", "command", "listen") and "registration" not in channel_permission):
+                    type_ = Permission.permissions.get(parsed[1].lower(), Permission.NONE)
+                    if (type_ & Permission.CONFIGURATION) or ((type_ & (Permission.SYSTEM | Permission.COMMAND | Permission.READ)) and guild_config != {}):
                         if len(parsed) == 3:
                             channel = get_TextChannel_by_name(message.guild.channels, parsed[2])
                         else:
                             channel = message.channel
                         if channel:
-                            guild_config[channel.id] = guild_config.get(channel.id, set(()))
-                            guild_config[channel.id].add(type_)
-                            self.registered_guild[message.guild.id] = guild_config
-                            await message.reply(f"Channel '{channel.name}' is '{type_}' enabled.")
+                            if guild_config == {}:
+                                self.registered_guild[message.guild.id] = Permission(message.guild.id)
+                            self.registered_guild[message.guild.id].add(channel.id, type_)
+                            await message.reply(f"Channel '{channel.name}' is '{parsed[1]}' enabled.")
                 return
         
-        if "configuration" in channel_permission:
+        if (channel_permission & Permission.CONFIGURATION):
             command = parse_command_name(content).lower()
             if command == "!delete":
                 parsed = parse_command(content, 3)
                 if len(parsed) >= 2:
-                    type_ = parsed[1].lower()
-                    if type_ in ("system", "configuration", "command", "listen"):
+                    type_ = Permission.permissions.get(parsed[1].lower())
+                    if type_:
                         if len(parsed) == 3:
                             channel = get_TextChannel_by_name(message.guild.channels, parsed[2])
                         else:
                             channel = message.channel
                         if channel:
-                            permission = guild_config.get(channel.id)
-                            if permission:
-                                permission.discard(type_)
-                                if not permission:
-                                    guild_config.pop(channel.id)
-                            await message.reply(f"Channel '{channel.name}' is '{type_}' disabled.")
+                            guild_config.delete(channel.id, type_)
+                            if not guild_config.channels:
+                                self.registered_guild.pop(message.guild.id)
+                            await message.reply(f"Channel '{channel.name}' is '{parsed[1]}' disabled.")
                 return
             
             if command == "!clear":
@@ -126,16 +120,15 @@ class MyClient(discord.Client):
                     else:
                         channel = message.channel
                     if channel:
-                        if channel.id in guild_config:
-                            guild_config.pop(channel.id)
+                        guild_config.clear(channel.id)
+                        if not guild_config.channels:
+                            self.registered_guild.pop(message.guild.id)
                         await message.reply(f"'{channel.name}' is clear.")
                 return
             
-            if command == "!reset":
-                parsed = parse_command(content, 2)
-                if len(parsed) == 1:
-                    self.registered_guild.pop(message.guild.id)
-                    await message.reply("This guild configuration has been erased.")
+            if content.lower() == "!reset":
+                self.registered_guild.pop(message.guild.id)
+                await message.reply("This guild configuration has been erased.")
                 return
             
             if command == "!show":
@@ -146,28 +139,28 @@ class MyClient(discord.Client):
                     else:
                         channel = message.channel
                     if channel:
-                        await message.reply(f"'{channel.name}' is '{', '.join(guild_config.get(channel.id, set(())))}'.")
+                        await message.reply(f"'{channel.name}' is '{', '.join(filter(lambda x: Permission.permissions[x] & guild_config.get_permission(channel.id), Permission.permissions.keys()))}'.")
                 return
             
             if content.lower() == "!list":
                 l = []
-                for (i, x) in guild_config.items():
+                for (i, p) in guild_config.channels.items():
                     channel = list(filter(lambda x: x.id == i and x.type == discord.ChannelType.text, message.guild.channels))
                     if len(channel) == 0:
-                        guild_config.pop(i)
+                        guild_config.clear(i)
                     else:
-                        l.append(f"'{channel[0].name}' is '{', '.join(x)}'")
+                        l.append(f"'{channel[0].name}' is '{', '.join(filter(lambda x: Permission.permissions[x] & p, Permission.permissions.keys()))}'")
                 s = '\n'.join(l)
                 await message.reply(f"{s}")
                 return
         
-        if "command" in channel_permission:
+        if (channel_permission & Permission.COMMAND):
             command = parse_command_name(content).lower()
             if command == "!hello":
                 await message.reply("Hello!", mention_author = True)
                 return
         
-        if "listen" in channel_permission:
+        if (channel_permission & Permission.READ):
             await message.reply(content, mention_author = True)
             return
         
