@@ -77,8 +77,7 @@ class MyClient(discord.Client):
         
         if "system" in channel_permission:
             if content.lower() == "!exit":
-                await message.reply("Terminating...", mention_author = True)
-                await self.close()
+                await self.exit(message)
                 return
         
         if "registration" in channel_permission or "configuration" in channel_permission:
@@ -174,9 +173,12 @@ class MyClient(discord.Client):
         
         if message.author.id == self.privileged_id:
             if content.lower() == "!exit":
-                await message.reply("Terminating...", mention_author = True)
-                await self.close()
+                await self.exit(message)
                 return
+    
+    async def exit(self, message):
+        await message.reply("Terminating...", mention_author = True)
+        await self.close()
 
 
 intents = discord.Intents.default()
