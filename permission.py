@@ -25,6 +25,10 @@ class Permission(object):
     permissions_all = dict(permissions)
     permissions_all.update(permissions_privileged)
     
+    @classmethod
+    def get_names(cls, permission):
+        return [k for (k, v) in cls.permissions_all.items() if (permission & v)]
+    
     def __init__(self):
         self.configuration = 0
         self.channels = {}

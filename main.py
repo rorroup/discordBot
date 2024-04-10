@@ -20,27 +20,27 @@ class MyClient(discord.Client):
         print('------')
 
     async def on_guild_channel_delete(self, channel):
-        guild_config = self.registered_guild.get(channel.guild.id)
-        if guild_config:
-            guild_config.permission_delete(channel.id)
-            if not guild_config.is_configured():
-                self.registered_guild.pop(guild_config.id)
+        guild_solver = self.registered_guild.get(channel.guild.id)
+        if guild_solver:
+            guild_solver.permission_delete(channel.id)
+            if not guild_solver.is_configured():
+                self.registered_guild.pop(guild_solver.id)
     
     async def on_message(self, message):
         # we do not want the bot to reply to itself
         if message.author.id == self.user.id:
             return
         
-        guild_config = self.registered_guild.get(message.guild.id, Register.default())
+        guild_solver = self.registered_guild.get(message.guild.id, Register.default())
         
         content = message.content.strip()
         
-        if guild_config.channel_is_system(message.channel.id):
+        if guild_solver.channel_is_system(message.channel.id):
             if content.lower() == "!exit":
                 await self.exit(message)
                 return
         
-        solved = await guild_config.discord_receive(message, self)
+        solved = await guild_solver.discord_receive(message, self)
         if solved:
             return
         
