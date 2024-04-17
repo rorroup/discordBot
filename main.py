@@ -3,6 +3,7 @@
 """
 
 # This example requires the 'message_content' privileged intent to function.
+# This example requires the 'guilds' privileged intent to function.
 
 import discord
 import credential
