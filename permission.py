@@ -9,7 +9,7 @@ class Component(object):
         return None
 
 
-# Component commands run on MyClient as every command, but may be implemented to work at Solver level to operate on Components.
+# Component commands run on MyClient as every command, but may be implemented to extend Solver and operate on Components.
 
 # Permission management group.
 cmdgrp_configuration = discord.app_commands.Group(name = "configure", description = "Configure channel types.", guild_only = True)
