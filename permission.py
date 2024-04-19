@@ -103,7 +103,7 @@ class Permission(Component):
     
     def get_names(self):
         l = []
-        for (i, p) in self.channels.get_all():
+        for (i, p) in self.channels.items():
             l.append((i, ', '.join([k for (k, v) in Permission.permissions.items() if (p & v)])))
         return l
 

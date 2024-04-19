@@ -58,7 +58,7 @@ class MyClient(discord.Client):
         if guild.id not in self.registered_guild:
             return "This guild has no components installed."
         await self.registered_guild.get(guild.id).uninstall(component)
-        if self.registered_guild.get(guild.id).is_configured:
+        if self.registered_guild.get(guild.id).is_configured():
             return f"Component '{component}' uninstalled."
         self.registered_guild.pop(guild.id)
         return "No installed components left for this guild."
