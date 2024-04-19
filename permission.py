@@ -67,13 +67,13 @@ class Permission(Component):
         guild_target = discord.Object(id = guild_id)
         client.tree.add_command(cmdgrp_configuration, guild = guild_target)
         await client.tree.sync(guild = guild_target)
-        self.permission.clear()
+        self.channels.clear()
     
     async def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
         client.tree.remove_command(cmdgrp_configuration, guild = guild_target)
         await client.tree.sync(guild = guild_target)
-        self.permission.clear()
+        self.channels.clear()
     
     def get(self, channel_id):
         return self.channels.get(channel_id, Permission.NONE)
