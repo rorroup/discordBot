@@ -16,11 +16,15 @@ class Solver(object):
         self.permission = None
         self.hello = None
     
-    async def install(self, component):
+    async def install(self, component, installation = False):
         if not self.permission and (component.lower() == "configure" or component.lower() == "all"):
-            self.permission = await Permission.install(self.bot, self.id)
+            self.permission = Permission()
+            if installation:
+                await self.permission.install(self.bot, self.id)
         if not self.hello and (component.lower() == "hello" or component.lower() == "all"):
-            self.hello = await Hello.install(self.bot, self.id)
+            self.hello = Hello()
+            if installation:
+                await self.hello.install(self.bot, self.id)
     
     async def uninstall(self, component):
         if self.permission and (component.lower() == "configure" or component.lower() == "all"):

@@ -3,10 +3,10 @@ from typing import Literal
 
 class Component(object):
     async def install(self, client, guild_id):
-        return self
+        return
     
     async def uninstall(self, client, guild_id):
-        return None
+        return
 
 
 # Component commands run on MyClient as every command, but may be implemented to extend Solver and operate on Components.
@@ -68,19 +68,12 @@ class Permission(Component):
         client.tree.add_command(cmdgrp_configuration, guild = guild_target)
         await client.tree.sync(guild = guild_target)
         self.permission.clear()
-        return self
     
     async def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
         client.tree.remove_command(cmdgrp_configuration, guild = guild_target)
         await client.tree.sync(guild = guild_target)
         self.permission.clear()
-        return None
-    
-    @classmethod
-    async def install(cls, client, guild_id):
-        x = cls()
-        return await x.install(client, guild_id)
     
     def get(self, channel_id):
         return self.channels.get(channel_id, Permission.NONE)
@@ -128,15 +121,8 @@ class Hello(Component):
         guild_target = discord.Object(id = guild_id)
         client.tree.add_command(hello, guild = guild_target)
         await client.tree.sync(guild = guild_target)
-        return self
     
     async def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
         client.tree.remove_command(hello, guild = guild_target)
         await client.tree.sync(guild = guild_target)
-        return None
-    
-    @classmethod
-    async def install(cls, client, guild_id):
-        x = cls()
-        return await x.install(client, guild_id)

@@ -49,7 +49,7 @@ class MyClient(discord.Client):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
             self.registered_guild[guild.id] = Solver(self, guild)
-        await self.registered_guild.get(guild.id).install(component)
+        await self.registered_guild.get(guild.id).install(component, True)
         return f"Component '{component}' installed."
     
     async def component_uninstall(self, guild, component, user):
