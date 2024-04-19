@@ -10,30 +10,31 @@ class Solver(object):
         Slash commands are generally solved within the command itself. They may configure the Solver to behave differently.
     """
     
-    def __init__(self, guild_id):
-        self.id = guild_id
+    def __init__(self, bot, guild):
+        self.bot = bot
+        self.id = guild.id
         self.permission = None
         self.hello = None
     
-    async def install(self, client, component):
+    async def install(self, component):
         if not self.permission and (component.lower() == "configure" or component.lower() == "all"):
-            self.permission = await Permission.install(client, self.id)
+            self.permission = await Permission.install(self.bot, self.id)
         if not self.hello and (component.lower() == "hello" or component.lower() == "all"):
-            self.hello = await Hello.install(client, self.id)
+            self.hello = await Hello.install(self.bot, self.id)
     
-    async def uninstall(self, client, component):
+    async def uninstall(self, component):
         if self.permission and (component.lower() == "configure" or component.lower() == "all"):
-            self.permission = await self.permission.uninstall(client, self.id)
+            self.permission = await self.permission.uninstall(self.bot, self.id)
         if self.hello and (component.lower() == "hello" or component.lower() == "all"):
-            self.hello = await self.hello.uninstall(client, self.id)
+            self.hello = await self.hello.uninstall(self.bot, self.id)
     
     def is_configured(self):
         return self.permission != None or self.hello != None
     
-    def describe(self, guild):
+    def describe(self):
         s = ""
         if self.permission:
-            s += "Permissions:\n" + self.permission_show(guild)
+            s += "Permissions:\n" + self.permission_show(self.bot.get_guild(self.id))
         if self.hello:
             s += "Slash Commands:\nHello"
         return s
@@ -50,16 +51,16 @@ class Solver(object):
             return
         self.permission.delete(channel_id, permission)
     
-    def permission_show(self, guild):
+    def permission_show(self):
         l = []
-        l.append(f"{guild.get_channel(i).name} is '{p}'" for (i, p) in self.permission.get_names())
+        l.append(f"{self.bot.get_guild(self.id).get_channel(i).name} is '{p}'" for (i, p) in self.permission.get_names())
         return '\n'.join(l)
     
-    async def on_guild_channel_delete(self, channel, client):
+    async def on_guild_channel_delete(self, channel):
         if self.permission:
             self.permission_delete(channel.id)
     
-    async def on_message(self, message, client):
+    async def on_message(self, message):
         if self.permission:
             content = message.content.strip()
             

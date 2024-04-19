@@ -29,7 +29,7 @@ class MyClient(discord.Client):
     async def on_guild_channel_delete(self, channel):
         guild_solver = self.registered_guild.get(channel.guild.id)
         if guild_solver:
-            guild_solver.on_guild_channel_delete(channel, self)
+            guild_solver.on_guild_channel_delete(channel)
     
     async def on_message(self, message):
         # we do not want the bot to reply to itself
@@ -39,7 +39,7 @@ class MyClient(discord.Client):
         guild_solver = self.registered_guild.get(message.guild.id)
         
         if guild_solver:
-            guild_solver.on_message(message, self)
+            guild_solver.on_message(message)
     
     async def exit(self):
         await self.close()
@@ -48,8 +48,8 @@ class MyClient(discord.Client):
         if component.lower() not in ("configuration", "hello", "all"):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
-            self.registered_guild[guild.id] = Solver(guild.id)
-        await self.registered_guild.get(guild.id).install(self, component)
+            self.registered_guild[guild.id] = Solver(self, guild)
+        await self.registered_guild.get(guild.id).install(component)
         return f"Component '{component}' installed."
     
     async def component_uninstall(self, guild, component, user):
@@ -57,7 +57,7 @@ class MyClient(discord.Client):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
             return "This guild has no components installed."
-        await self.registered_guild.get(guild.id).uninstall(self, component)
+        await self.registered_guild.get(guild.id).uninstall(component)
         if self.registered_guild.get(guild.id).is_configured:
             return f"Component '{component}' uninstalled."
         self.registered_guild.pop(guild.id)
@@ -66,7 +66,7 @@ class MyClient(discord.Client):
     async def component_show(self, guild):
         guild_solver = self.registered_guild.get(guild.id)
         if guild_solver:
-            return f"Installed components: {guild_solver.describe(guild)}."
+            return f"Installed components: {guild_solver.describe()}."
         else:
             return "No components installed for this guild."
 
