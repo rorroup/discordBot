@@ -116,7 +116,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
         return
 
 # Component installation group. Components are held inside a guild Solver.
-cmdgrp_install = discord.app_commands.Group(name = "install", description = "Install bot components.", guild_only = True)
+cmdgrp_install = discord.app_commands.Group(name = "component", description = "Manage bot components.", guild_only = True)
 
 # /install add '<component>'
 @cmdgrp_install.command(description = "Add a bot component to this guild.")
