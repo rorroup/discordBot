@@ -12,7 +12,7 @@ async def add(interaction: discord.Interaction, channel: discord.TextChannel, ty
     if not isinstance(channel, discord.TextChannel) or channel.type != discord.ChannelType.text:
         await interaction.response.send_message("Could not add. Channel must be a plain text channel.")
         return
-    permission = Permission.permissions.get(type.lower())
+    permission = Permission.permissions_all.get(type.lower())
     if not permission:
         await interaction.response.send_message(f"Could not add. Invalid type '{type}'.")
         return
@@ -24,7 +24,7 @@ async def delete(interaction: discord.Interaction, channel: discord.TextChannel,
     if not isinstance(channel, discord.TextChannel) or channel.type != discord.ChannelType.text:
         await interaction.response.send_message("Could not delete. Channel must be a plain text channel.")
         return
-    permission = Permission.permissions.get(type.lower())
+    permission = Permission.permissions_all.get(type.lower())
     if not permission:
         await interaction.response.send_message(f"Could not delete. Invalid type '{type}'.")
         return
@@ -49,8 +49,10 @@ class Permission(object):
     permissions = {
         "read":     READ,
         "write":    WRITE,
-        "all":      ALL,
     }
+    
+    permissions_all = dict(permissions)
+    permissions_all.update({"all": ALL,})
     
     def __init__(self, client, guild_id):
         super(Permission, self).__init__()
