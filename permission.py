@@ -59,7 +59,7 @@ class Permission(object):
     
     def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
-        client.tree.remove_command(cmdgrp_configuration, guild = guild_target)
+        client.tree.remove_command("configure", guild = guild_target)
         self.channels.clear()
     
     def get(self, channel_id):
@@ -107,4 +107,4 @@ class Hello(object):
     
     def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
-        client.tree.remove_command(hello, guild = guild_target)
+        client.tree.remove_command("hello", guild = guild_target)

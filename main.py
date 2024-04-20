@@ -162,7 +162,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
     if type.lower() == "uninstall":
         if interaction.guild_id in interaction.client.system_guild:
             guild_target = discord.Object(id = interaction.guild_id)
-            interaction.client.tree.remove_command(cmdgrp_system, guild = guild_target)
+            interaction.client.tree.remove_command("cmdgrp_system", guild = guild_target)
             await interaction.client.tree.sync(guild = guild_target)
             interaction.client.system_guild.discard(interaction.guild_id)
             await interaction.response.send_message("System commands uninstalled.")
