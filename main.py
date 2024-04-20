@@ -9,6 +9,7 @@ import discord
 import credential
 from solver import Solver
 from typing import Literal
+from storage import Storage
 
 
 class MyClient(discord.Client):
@@ -18,8 +19,11 @@ class MyClient(discord.Client):
         self.tree = discord.app_commands.CommandTree(self, fallback_to_global = False)
         self.system_guild = set(())
         self.registered_guild = {}
+        self.storage = Storage("saved", "system", "guilds")
     
     async def on_ready(self):
+        self.load_system_guild()
+        self.load_registered_guild()
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
 
@@ -49,7 +53,9 @@ class MyClient(discord.Client):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
             self.registered_guild[guild.id] = Solver(self, guild)
-        await self.registered_guild.get(guild.id).install(component, True)
+        self.registered_guild.get(guild.id).install(component)
+        await self.tree.sync(guild = discord.Object(id = guild.id))
+        self.save_registered_guild()
         return f"Component '{component}' installed."
     
     async def component_uninstall(self, guild, component, user):
@@ -57,10 +63,13 @@ class MyClient(discord.Client):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
             return "This guild has no components installed."
-        await self.registered_guild.get(guild.id).uninstall(component)
+        self.registered_guild.get(guild.id).uninstall(component)
+        await self.tree.sync(guild = discord.Object(id = guild.id))
         if self.registered_guild.get(guild.id).is_configured():
+            self.save_registered_guild()
             return f"Component '{component}' uninstalled."
         self.registered_guild.pop(guild.id)
+        self.save_registered_guild()
         return "No installed components left for this guild."
     
     async def component_show(self, guild):
@@ -69,6 +78,44 @@ class MyClient(discord.Client):
             return f"Installed components: {guild_solver.describe()}."
         else:
             return "No components installed for this guild."
+    
+    def load_system_guild(self):
+        self.system_guild.clear()
+        try:
+            for guild_id in self.storage.load_system_guild()["guilds"]:
+                self.tree.add_command(cmdgrp_system, guild = discord.Object(id = guild_id))
+                self.system_guild.add(guild_id)
+        except:
+            pass
+    
+    def save_system_guild(self):
+        self.storage.save_system_guild({"guilds": list(self.system_guild)})
+    
+    def load_registered_guild(self):
+        self.registered_guild.clear()
+        try:
+            for guild in self.storage.load_registered_guild()["guilds"]:
+                self.registered_guild[guild["guild_id"]] = Solver(self, self.get_guild(guild["guild_id"]))
+                if "hello" in guild:
+                    if guild["hello"]:
+                        self.registered_guild[guild["guild_id"]].install("hello")
+                if "configuration" in guild:
+                    self.registered_guild[guild["guild_id"]].install("configuration")
+                    for channel in guild["configuration"]:
+                        self.registered_guild[guild["guild_id"]].permission_add(channel[0], channel[1])
+        except:
+            pass
+    
+    def save_registered_guild(self):
+        guilds = []
+        for (id, solver) in self.registered_guild.items():
+            d = {"guild_id": id}
+            if solver.hello:
+                d["hello"] = True
+            if solver.permission:
+                d["configuration"] = list(solver.permission.channels.items())
+            guilds.append(d)
+        self.storage.save_registered_guild({"guilds": guilds})
 
 
 intents = discord.Intents.default()
@@ -88,6 +135,13 @@ async def exit(interaction: discord.Interaction):
     await interaction.response.send_message("Terminating...")
     await interaction.client.exit()
 
+# /system reload
+@cmdgrp_system.command(description = "Reload bot configuration.")
+async def reload(interaction: discord.Interaction):
+    interaction.client.load_system_guild()
+    interaction.client.load_registered_guild()
+    await interaction.response.send_message("Bot configuration reloaded.")
+
 # System commands installation command.
 @client.tree.command(description = "Install system commands.", guild = None)
 async def system(interaction: discord.Interaction, type: Literal["Install", "Uninstall"]):
@@ -103,6 +157,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
             await interaction.client.tree.sync(guild = guild_target)
             interaction.client.system_guild.add(interaction.guild_id)
             await interaction.response.send_message("System commands installed.")
+        interaction.client.save_system_guild()
         return
     if type.lower() == "uninstall":
         if interaction.guild_id in interaction.client.system_guild:
@@ -113,6 +168,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
             await interaction.response.send_message("System commands uninstalled.")
         else:
             await interaction.response.send_message("System is not installed.")
+        interaction.client.save_system_guild()
         return
 
 # Component installation group. Components are held inside a guild Solver.

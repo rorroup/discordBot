@@ -16,17 +16,13 @@ class Solver(object):
         self.permission = None
         self.hello = None
     
-    async def install(self, component, installation = False):
-            self.permission = Permission()
-            if installation:
-                await self.permission.install(self.bot, self.id)
+    def install(self, component):
         if not self.permission and (component.lower() == "configuration" or component.lower() == "all"):
+            self.permission = Permission(self.bot, self.id)
         if not self.hello and (component.lower() == "hello" or component.lower() == "all"):
-            self.hello = Hello()
-            if installation:
-                await self.hello.install(self.bot, self.id)
+            self.hello = Hello(self.bot, self.id)
     
-    async def uninstall(self, component):
+    def uninstall(self, component):
         if self.permission and (component.lower() == "configuration" or component.lower() == "all"):
             self.permission.uninstall(self.bot, self.id)
             self.permission = None
@@ -47,15 +43,19 @@ class Solver(object):
     
     def permission_add(self, channel_id, permission):
         self.permission.add(channel_id, permission)
+        self.bot.save_registered_guild()
     
     def permission_delete(self, channel_id = None, permission = None):
         if not channel_id:
             self.permission.clear()
+            self.bot.save_registered_guild()
             return
         if not permission:
             self.permission.erase(channel_id)
+            self.bot.save_registered_guild()
             return
         self.permission.delete(channel_id, permission)
+        self.bot.save_registered_guild()
     
     def permission_show(self):
         if self.permission:

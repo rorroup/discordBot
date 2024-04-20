@@ -1,13 +1,6 @@
 import discord
 from typing import Literal
 
-class Component(object):
-    async def install(self, client, guild_id):
-        return
-    
-    async def uninstall(self, client, guild_id):
-        return
-
 
 # Component commands run on MyClient as every command, but may be implemented to extend Solver and operate on Components.
 
@@ -43,7 +36,7 @@ async def show(interaction: discord.Interaction):
     await interaction.response.send_message(interaction.client[interaction.guild_id].permission_show(interaction.guild))
 
 
-class Permission(Component):
+class Permission(object):
     """
         Hold Guild permissions on a per channel basis.
     """
@@ -59,20 +52,14 @@ class Permission(Component):
         "all":      ALL,
     }
     
-    def __init__(self):
+    def __init__(self, client, guild_id):
         super(Permission, self).__init__()
         self.channels = {}
+        client.tree.add_command(cmdgrp_configuration, guild = discord.Object(id = guild_id))
     
-    async def install(self, client, guild_id):
-        guild_target = discord.Object(id = guild_id)
-        client.tree.add_command(cmdgrp_configuration, guild = guild_target)
-        await client.tree.sync(guild = guild_target)
-        self.channels.clear()
-    
-    async def uninstall(self, client, guild_id):
+    def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
         client.tree.remove_command(cmdgrp_configuration, guild = guild_target)
-        await client.tree.sync(guild = guild_target)
         self.channels.clear()
     
     def get(self, channel_id):
@@ -113,16 +100,11 @@ async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"Hello {interaction.user.name}")
 
 
-class Hello(Component):
-    def __init__(self):
+class Hello(object):
+    def __init__(self, client, guild_id):
         super(Hello, self).__init__()
+        client.tree.add_command(hello, guild = discord.Object(id = guild_id))
     
-    async def install(self, client, guild_id):
-        guild_target = discord.Object(id = guild_id)
-        client.tree.add_command(hello, guild = guild_target)
-        await client.tree.sync(guild = guild_target)
-    
-    async def uninstall(self, client, guild_id):
+    def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
         client.tree.remove_command(hello, guild = guild_target)
-        await client.tree.sync(guild = guild_target)
