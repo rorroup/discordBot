@@ -55,7 +55,7 @@ class Permission(object):
     def __init__(self, client, guild_id):
         super(Permission, self).__init__()
         self.channels = {}
-        client.tree.add_command(cmdgrp_configuration, guild = discord.Object(id = guild_id))
+        client.tree.add_command(cmdgrp_configuration, guild = discord.Object(id = guild_id), override = True)
     
     def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)
@@ -103,7 +103,7 @@ async def hello(interaction: discord.Interaction):
 class Hello(object):
     def __init__(self, client, guild_id):
         super(Hello, self).__init__()
-        client.tree.add_command(hello, guild = discord.Object(id = guild_id))
+        client.tree.add_command(hello, guild = discord.Object(id = guild_id), override = True)
     
     def uninstall(self, client, guild_id):
         guild_target = discord.Object(id = guild_id)

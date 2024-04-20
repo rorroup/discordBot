@@ -83,7 +83,7 @@ class MyClient(discord.Client):
         self.system_guild.clear()
         try:
             for guild_id in self.storage.load_system_guild()["guilds"]:
-                self.tree.add_command(cmdgrp_system, guild = discord.Object(id = guild_id))
+                self.tree.add_command(cmdgrp_system, guild = discord.Object(id = guild_id), override = True)
                 self.system_guild.add(guild_id)
         except:
             pass
@@ -153,7 +153,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
             await interaction.response.send_message("System already installed.")
         else:
             guild_target = discord.Object(id = interaction.guild_id)
-            interaction.client.tree.add_command(cmdgrp_system, guild = guild_target)
+            interaction.client.tree.add_command(cmdgrp_system, guild = guild_target, override = True)
             await interaction.client.tree.sync(guild = guild_target)
             interaction.client.system_guild.add(interaction.guild_id)
             await interaction.response.send_message("System commands installed.")
