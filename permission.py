@@ -14,10 +14,10 @@ async def add(interaction: discord.Interaction, channel: discord.TextChannel, ty
         return
     permission = Permission.permissions.get(type.lower())
     if not permission:
-        await interaction.repsonse.send_message(f"Could not add. Invalid type '{type}'.")
+        await interaction.response.send_message(f"Could not add. Invalid type '{type}'.")
         return
     interaction.client.registered_guild[interaction.guild_id].permission_add(channel.id, permission)
-    await interaction.repsonse.send_message(f"{channel.name} is '{type}' enabled.")
+    await interaction.response.send_message(f"{channel.name} is '{type}' enabled.")
 
 @cmdgrp_configuration.command(description = "Delete a channel permission.")
 async def delete(interaction: discord.Interaction, channel: discord.TextChannel, type: Literal["Read", "Write", "All"]):
@@ -33,7 +33,7 @@ async def delete(interaction: discord.Interaction, channel: discord.TextChannel,
 
 @cmdgrp_configuration.command(description = "Show all assigned channel permissions.")
 async def show(interaction: discord.Interaction):
-    await interaction.response.send_message(interaction.client[interaction.guild_id].permission_show(interaction.guild))
+    await interaction.response.send_message(interaction.client.registered_guild[interaction.guild_id].permission_show())
 
 
 class Permission(object):

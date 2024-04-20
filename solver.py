@@ -58,10 +58,10 @@ class Solver(object):
         self.bot.save_registered_guild()
     
     def permission_show(self):
+        l = []
         if self.permission:
             l = [f"{self.bot.get_guild(self.id).get_channel(i).name} is '{p}'" for (i, p) in self.permission.get_names()]
-            return '\n'.join(l)
-        return ""
+        return '\n'.join(l) or "No permissions assigned."
     
     async def on_guild_channel_delete(self, channel):
         if self.permission:
@@ -78,7 +78,7 @@ class Solver(object):
                 
                 channel_write_id = self.permission.get_channel_write()
                 if channel_write_id:
-                    message.guild.get_channel(channel_write_id).send(content)
+                    await message.guild.get_channel(channel_write_id).send(content)
                 
                 return True
         

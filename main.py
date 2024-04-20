@@ -43,7 +43,7 @@ class MyClient(discord.Client):
         guild_solver = self.registered_guild.get(message.guild.id)
         
         if guild_solver:
-            guild_solver.on_message(message)
+            await guild_solver.on_message(message)
     
     async def exit(self):
         await self.close()
@@ -75,7 +75,7 @@ class MyClient(discord.Client):
     async def component_show(self, guild):
         guild_solver = self.registered_guild.get(guild.id)
         if guild_solver:
-            return f"Installed components: {guild_solver.describe()}."
+            return f"Installed components:\n{guild_solver.describe()}."
         else:
             return "No components installed for this guild."
     
