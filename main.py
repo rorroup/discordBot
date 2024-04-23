@@ -10,15 +10,23 @@ import credential
 from solver import Solver
 from typing import Literal
 from storage import Storage
+import datetime
+import pytz # pip install pytz
+import configuration as CONFIG
 
 
 class MyClient(discord.Client):
+    
+    TIMEZONE = pytz.timezone(CONFIG.TIMEZONE)
+    SYNC_DELAY = datetime.timedelta(minutes = CONFIG.SYNC_DELAY_MINUTES)
+    
     def __init__(self, privileged_id, *args, **kwargs):
         super(MyClient, self).__init__(*args, **kwargs)
         self.privileged_id = privileged_id
         self.tree = discord.app_commands.CommandTree(self, fallback_to_global = False)
         self.system_guild = set(())
         self.registered_guild = {}
+        self.sync_guild = {}
         self.storage = Storage("saved", "system", "guilds")
     
     async def on_ready(self):
@@ -28,7 +36,7 @@ class MyClient(discord.Client):
         print('------')
 
     async def setup_hook(self):
-        await self.tree.sync(guild = None)
+        await self.sync_tree(None)
     
     async def on_guild_channel_delete(self, channel):
         guild_solver = self.registered_guild.get(channel.guild.id)
@@ -45,16 +53,29 @@ class MyClient(discord.Client):
         if guild_solver:
             await guild_solver.on_message(message)
     
+    async def sync_tree(self, guild = None):
+        await self.tree.sync(guild = guild)
+        if guild:
+            self.sync_guild.update({guild.id: datetime.datetime.now(tz = MyClient.TIMEZONE)})
+    
+    async def sync_allowed(self, guild):
+        last = self.sync_guild.get(guild.id)
+        if last:
+            return datetime.datetime.now(tz = MyClient.TIMEZONE) - last > MyClient.SYNC_DELAY
+        return True
+    
     async def exit(self):
         await self.close()
     
     async def component_install(self, guild, component, user):
         if component.lower() not in ("configuration", "hello", "all"):
             return f"Unknown component '{component}'."
+        if not await self.sync_allowed(guild):
+            return f"Component modifications may be registered every {int(MyClient.SYNC_DELAY.total_seconds())} seconds. Please wait a moment."
         if guild.id not in self.registered_guild:
             self.registered_guild[guild.id] = Solver(self, guild)
         self.registered_guild.get(guild.id).install(component)
-        await self.tree.sync(guild = guild)
+        await self.sync_tree(guild)
         self.save_registered_guild()
         return f"Component '{component}' installed."
     
@@ -63,8 +84,10 @@ class MyClient(discord.Client):
             return f"Unknown component '{component}'."
         if guild.id not in self.registered_guild:
             return "This guild has no components installed."
+        if not await self.sync_allowed(guild):
+            return f"Component modifications may be registered every {MyClient.SYNC_DELAY.total_seconds()} seconds. Please wait a moment."
         self.registered_guild.get(guild.id).uninstall(component)
-        await self.tree.sync(guild = guild)
+        await self.sync_tree(guild)
         if self.registered_guild.get(guild.id).is_configured():
             self.save_registered_guild()
             return f"Component '{component}' uninstalled."
@@ -148,12 +171,15 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
     if interaction.user.id != interaction.client.privileged_id:
         await interaction.response.send_message(f"You do not have authorization to modify this component.")
         return
+    if not await interaction.client.sync_allowed(interaction.guild):
+        await interaction.response.send_message(f"Component modifications may be registered every {MyClient.SYNC_DELAY.total_seconds()} seconds. Please wait a moment.")
+        return
     if type.lower() == "install":
         if interaction.guild_id in interaction.client.system_guild:
             await interaction.response.send_message("System already installed.")
         else:
             interaction.client.tree.add_command(cmdgrp_system, guild = interaction.guild, override = True)
-            await interaction.client.tree.sync(guild = interaction.guild)
+            await interaction.client.sync_tree(interaction.guild)
             interaction.client.system_guild.add(interaction.guild_id)
             await interaction.response.send_message("System commands installed.")
         interaction.client.save_system_guild()
@@ -161,7 +187,7 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
     if type.lower() == "uninstall":
         if interaction.guild_id in interaction.client.system_guild:
             interaction.client.tree.remove_command("cmdgrp_system", guild = interaction.guild)
-            await interaction.client.tree.sync(guild = interaction.guild)
+            await interaction.client.sync_tree(interaction.guild)
             interaction.client.system_guild.discard(interaction.guild_id)
             await interaction.response.send_message("System commands uninstalled.")
         else:
