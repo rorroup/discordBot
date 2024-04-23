@@ -54,7 +54,7 @@ class MyClient(discord.Client):
         if guild.id not in self.registered_guild:
             self.registered_guild[guild.id] = Solver(self, guild)
         self.registered_guild.get(guild.id).install(component)
-        await self.tree.sync(guild = discord.Object(id = guild.id))
+        await self.tree.sync(guild = guild)
         self.save_registered_guild()
         return f"Component '{component}' installed."
     
@@ -64,7 +64,7 @@ class MyClient(discord.Client):
         if guild.id not in self.registered_guild:
             return "This guild has no components installed."
         self.registered_guild.get(guild.id).uninstall(component)
-        await self.tree.sync(guild = discord.Object(id = guild.id))
+        await self.tree.sync(guild = guild)
         if self.registered_guild.get(guild.id).is_configured():
             self.save_registered_guild()
             return f"Component '{component}' uninstalled."
@@ -152,18 +152,16 @@ async def system(interaction: discord.Interaction, type: Literal["Install", "Uni
         if interaction.guild_id in interaction.client.system_guild:
             await interaction.response.send_message("System already installed.")
         else:
-            guild_target = discord.Object(id = interaction.guild_id)
-            interaction.client.tree.add_command(cmdgrp_system, guild = guild_target, override = True)
-            await interaction.client.tree.sync(guild = guild_target)
+            interaction.client.tree.add_command(cmdgrp_system, guild = interaction.guild, override = True)
+            await interaction.client.tree.sync(guild = interaction.guild)
             interaction.client.system_guild.add(interaction.guild_id)
             await interaction.response.send_message("System commands installed.")
         interaction.client.save_system_guild()
         return
     if type.lower() == "uninstall":
         if interaction.guild_id in interaction.client.system_guild:
-            guild_target = discord.Object(id = interaction.guild_id)
-            interaction.client.tree.remove_command("cmdgrp_system", guild = guild_target)
-            await interaction.client.tree.sync(guild = guild_target)
+            interaction.client.tree.remove_command("cmdgrp_system", guild = interaction.guild)
+            await interaction.client.tree.sync(guild = interaction.guild)
             interaction.client.system_guild.discard(interaction.guild_id)
             await interaction.response.send_message("System commands uninstalled.")
         else:
